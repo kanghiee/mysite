@@ -3,6 +3,7 @@ from flask import Flask, render_template, request, redirect, url_for, session
 # mysql과 연동을 하는 라이브러리 로드 
 import pymysql
 from datetime import timedelta
+from static.python import querys
 
 # Flask라는 Class 생성
 app = Flask(__name__)
@@ -25,7 +26,7 @@ def db_execute(query, *data):
         host = '2kh616.mysql.pythonanywhere-service.com', 
         port = 3306, 
         user = '2kh616', 
-        password = '2kh616@naver', 
+        password = 'dlrkdgml0616', 
         db = '2kh616$kang_hiee' 
     )
     # 가상공간 Cursor 생성
@@ -75,19 +76,9 @@ def main():
     _pass = request.form['input_pass']
     # 받아온 데이터를 확인 
     print(f"/main[post] -> 유저 id : {_id}, password : {_pass}")
-    # 유저가 보낸 데이터를 DB server에 table data와 비교
-    login_query = """
-        select 
-        * 
-        from 
-        user 
-        where 
-        id = %s 
-        and 
-        password = %s
-    """
+
     # 함수 호출
-    db_result = db_execute(login_query, _id, _pass)
+    db_result = db_execute(querys.login_query, _id, _pass)
     # 로그인의 성공 여부 (조건식?? db_result가 존재하는가?)
     if db_result:
         # 로그인이 성공하는 경우 -> main.html을 되돌려준다. 
@@ -130,7 +121,7 @@ def check_id():
         where id = %s
     """
     # 함수 호출 
-    db_result = db_execute(check_id_query, _id)
+    db_result = db_execute(querys.check_id_query, _id)
     # id가 사용가능한 경우 : db_result 존재하는 않을때
     if db_result:
         result = "0"
@@ -153,7 +144,7 @@ def signup2():
     """
     # 함수 호출 (에러가 발생하는 경우가 있으니 try 생성)
     try:
-        db_result = db_execute(insert_user_query, _id, _pass, _name)
+        db_result = db_execute(querys.signup_query, _id, _pass, _name)
         print(db_result)
     except:
         db_result = 3
