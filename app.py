@@ -4,47 +4,30 @@ from flask import Flask, render_template, request, redirect, url_for, session
 import pymysql
 from datetime import timedelta
 from static.python import querys
+# 환경 변수 dotenv를 로드
+from dotenv import load_dotenv
+import os
+# database.py안에 있는 MyDB class 로드
+from static.python.database import MyDB
+
+# .env파일을 로드
+load_dotenv()
 
 # Flask라는 Class 생성
 app = Flask(__name__)
 # secret_key 설정 (session데이터 암호화 키)
-app.secret_key = 'ABC'
+app.secret_key = os.getenv('secret_key')
 # session의 지속시간을 설정
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(seconds=10)
 
-# 세션 데이터 초기화 
-# session.clear()
-
-# 함수 생성
-# DB server와 연결하고 -> 가상공산 Cursor 생성 ->
-# 매개변수 query문, data값을 이용하여 질의를 보내고 ->
-# 결과 값을 받아오거나 DB서버에 동기화 -> 
-# DB server와의 연결을 종료
-def db_execute(query, *data):
-    # 데이터베이스와 연결 (server 정보)
-    _db = pymysql.connect(
-        host = '2kh616.mysql.pythonanywhere-service.com', 
-        port = 3306, 
-        user = '2kh616', 
-        password = 'dlrkdgml0616', 
-        db = '2kh616$kang_hiee' 
-    )
-    # 가상공간 Cursor 생성
-    cursor = _db.cursor(pymysql.cursors.DictCursor)
-    # 매개변수 query, data를 이용하여 질의 
-    cursor.execute(query, data)
-    # query가 select라면 결과값을 변수(result)에 저장 
-    if query.strip().lower().startswith('select'):
-        result = cursor.fetchall()
-    # query가 select가 아니라면 DB server와 동기화하고 
-    # 변수(result)는 Query OK 문자를 대입
-    else:
-        _db.commit()
-        result = 'Query OK'
-    # 데이터베이스 서버와의 연결을 종료
-    _db.close()
-    # 결과(result)를 되돌려준다.
-    return result
+# MyDB class 생성
+mydb = MyDB(
+    os.getenv('host'),
+    int(os.getenv('port')),
+    os.getenv('user'),
+    os.getenv('password'),
+    os.getenv('db_name')
+)
 
 
 # 메인페이지 api 생성 
@@ -78,7 +61,7 @@ def main():
     print(f"/main[post] -> 유저 id : {_id}, password : {_pass}")
 
     # 함수 호출
-    db_result = db_execute(querys.login_query, _id, _pass)
+    db_result = mydb.db_execute(querys.login_query, _id, _pass)
     # 로그인의 성공 여부 (조건식?? db_result가 존재하는가?)
     if db_result:
         # 로그인이 성공하는 경우 -> main.html을 되돌려준다. 
@@ -121,7 +104,7 @@ def check_id():
         where id = %s
     """
     # 함수 호출 
-    db_result = db_execute(querys.check_id_query, _id)
+    db_result = mydb.db_execute(querys.check_id_query, _id)
     # id가 사용가능한 경우 : db_result 존재하는 않을때
     if db_result:
         result = "0"
@@ -144,7 +127,7 @@ def signup2():
     """
     # 함수 호출 (에러가 발생하는 경우가 있으니 try 생성)
     try:
-        db_result = db_execute(querys.signup_query, _id, _pass, _name)
+        db_result = mydb.db_execute(querys.signup_query, _id, _pass, _name)
         print(db_result)
     except:
         db_result = 3
@@ -160,3 +143,4 @@ def logout():
     # 세션 데이터를 제거
     session.clear()
     return redirect('/')
+app.run(debug=True)
